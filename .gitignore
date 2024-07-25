@@ -7,3 +7,6 @@ backend/db.sqlite3
 
 # cache
 *__pycache__*
+
+# tokens
+backend/.env

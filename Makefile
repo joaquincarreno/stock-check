@@ -9,6 +9,10 @@ back:
 	cd backend/ ; \
 		../venv/bin/python manage.py runserver 0.0.0.0:8000
 
+run-scripts-back:
+	cd backend ; \
+		../venv/bin/python manage.py runscript fill_db
+
 front:
 	cd frontend/ ; \
 		npm run net

@@ -1,0 +1,14 @@
+BSALE_API = "https://api.bsale.io"
+v1 = BSALE_API + "/v1"
+
+ENDPOINT_OFFICE = v1 + "/offices"
+ENDPOINT_OFFICE_LIST = ENDPOINT_OFFICE + ".json"
+
+ENDPOINT_STOCK = v1 + "/stocks"
+ENDPOINT_STOCK_LIST = ENDPOINT_STOCK + ".json"
+
+ENDPOINT_PRODUCT = v1 + "/product_types"
+ENDPOINT_PRODUCT_LIST = ENDPOINT_PRODUCT + ".json"
+
+ENDPOINT_VARIANT = v1 + "/variants"
+ENDPOINT_VARIANT_LIST = ENDPOINT_VARIANT + ".json"
