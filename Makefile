@@ -9,6 +9,11 @@ back:
 	cd backend/ ; \
 		../venv/bin/python manage.py runserver 0.0.0.0:8000
 
+migrations:
+	cd backend/ ; \
+		../venv/bin/python manage.py makemigrations ; \
+		../venv/bin/python manage.py migrate
+
 run-scripts-back:
 	cd backend ; \
 		../venv/bin/python manage.py runscript fill_db
