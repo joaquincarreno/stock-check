@@ -7,13 +7,22 @@ from constants import (
     ENDPOINT_USER_LIST,
     ENDPOINT_PRODUCT_LIST,
     ENDPOINT_VARIANT_LIST,
+    ENDPOINT_PRODUCT_TYPES_LIST,
 )
-from api.models import Conglomerate, Company, Office, BsaleUser, Product, Variant
+from api.models import (
+    Conglomerate,
+    Company,
+    Office,
+    BsaleUser,
+    Product,
+    ProductType,
+    Variant,
+)
 
 
 def getAllDataFromAPI(endpoint, api_token, debug=False):
     r = requests.get(
-        endpoint,
+        endpoint + "?limit=50",
         headers={"access_token": api_token},
     )
     data = r.json()
@@ -23,8 +32,27 @@ def getAllDataFromAPI(endpoint, api_token, debug=False):
     items = data["items"]
     while len(items) < count:
         r = requests.get(
-            endpoint + "?offset=",
-            str(count),
+            endpoint + "?limit=50&offset=" + str(len(items)),
+            headers={"access_token": api_token},
+        )
+        data = r.json()
+        items += data["items"]
+    return items
+
+
+def getSampleDataFromAPI(endpoint, api_token, debug=False):
+    r = requests.get(
+        endpoint + "?limit=50",
+        headers={"access_token": api_token},
+    )
+    data = r.json()
+    if debug:
+        print(data)
+    count = 100
+    items = data["items"]
+    while len(items) < count:
+        r = requests.get(
+            endpoint + "?limit=50&offset=" + str(len(items)),
             headers={"access_token": api_token},
         )
         data = r.json()
@@ -110,24 +138,47 @@ def run():
                 firstName=userData["firstName"],
                 lastName=userData["lastName"],
                 email=userData["email"],
-                state=userData["state"] == 1,
+                state=userData["state"] == 0,
                 defaultOffice=office[0],
             ).save()
         # print(users)
     print("users:", len(BsaleUser.objects.all()))
 
     for comp in [comp1, comp2]:
+        print("fetching product types for", comp.name)
+        products = getAllDataFromAPI(ENDPOINT_PRODUCT_TYPES_LIST, comp.api_token)
+        print("fetched", len(products), "items")
+        for productTypeData in products:
+            ProductType(
+                company=comp,
+                bsaleId=productTypeData["id"],
+                name=productTypeData["name"],
+                editable=productTypeData["isEditable"] == 1,
+                state=productTypeData["state"] == 1,
+            ).save()
+    print("product types:", len(ProductType.objects.all()))
+
+    for comp in [comp1, comp2]:
+        ids = []
         print("fetching products for", comp.name)
         products = getAllDataFromAPI(ENDPOINT_PRODUCT_LIST, comp.api_token)
         print("fetched", len(products), "items")
         for productData in products:
-            # print(productData)
+            p_type = ProductType.objects.get(
+                company=comp, bsaleId=productData["product_type"]["id"]
+            )
             product = Product(
                 company=comp,
                 bsaleId=productData["id"],
                 name=productData["name"],
-                editable=productData["isEditable"] == 1,
+                description=productData["description"],
+                classification=productData["classification"],
+                ledgerAccount=productData["ledgerAccount"],
+                costCenter=productData["costCenter"],
+                allowDecimal=productData["allowDecimal"] == 1,
+                stockControl=productData["stockControl"] == 1,
                 state=productData["state"] == 1,
+                productType=p_type,
             ).save()
     print("products:", len(Product.objects.all()))
 
@@ -135,15 +186,13 @@ def run():
         print("fetching variants for", comp.name)
         variants = getAllDataFromAPI(ENDPOINT_VARIANT_LIST, comp.api_token)
         print("fetched", len(variants), "items")
-        products = Product.objects.filter(company=comp.id)
-        # print(offices)
         for variantData in variants:
-            product = products.filter(
+            # print(variantData["id"], len(Product.objects.filter(bsaleId=variantData["product"]["id"])))
+            product = Product.objects.get(
                 bsaleId=variantData["product"]["id"], company=comp
             )
-            assert len(product) == 1
             variant = Variant(
-                product=product[0],
+                product=product,
                 bsaleId=variantData["id"],
                 description=variantData["description"],
                 state=variantData["state"] == 1,

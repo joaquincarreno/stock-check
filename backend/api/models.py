@@ -44,13 +44,31 @@ class BsaleUser(models.Model):
     defaultOffice = models.ForeignKey(Office, on_delete=models.CASCADE)
 
 
-class Product(models.Model):
+class ProductType(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
 
     bsaleId = models.IntegerField()
     name = models.TextField()
     editable = models.BooleanField()
     state = models.BooleanField()
+
+
+product_classifications = ((0, "product"), (1, "service"), (3, "pack/promotion"))
+
+
+class Product(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+
+    bsaleId = models.IntegerField()
+    name = models.TextField()
+    description = models.TextField(null=True)
+    classification = models.IntegerField(choices=product_classifications)
+    ledgerAccount = models.TextField(null=True)
+    costCenter = models.TextField(null=True)
+    allowDecimal = models.BooleanField()
+    stockControl = models.BooleanField()
+    state = models.BooleanField()
+    productType = models.ForeignKey(ProductType, on_delete=models.CASCADE)
 
 
 class Variant(models.Model):
@@ -62,16 +80,17 @@ class Variant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
 
-class VirtualStock(models.Model):
-    quantity = models.FloatField()
-    quantityReserved = models.FloatField()
-    quantityAvailable = models.FloatField()
-    variant = models.ForeignKey(Variant, on_delete=models.CASCADE)
-    office = models.ForeignKey(Office, on_delete=models.CASCADE)
-    # TODO: agregar fecha
+user_choices = ((0, "Admin"), (1, "Seller"))
 
 
-# models for reports data
+class User(models.Model):
+    userType = models.IntegerField(choices=user_choices, default=1)
+    conglomerate = models.ForeignKey(
+        Conglomerate, on_delete=models.PROTECT
+    )  # cambiar a conglomerado
+
+
+# models for inventary data
 class StockReport(models.Model):
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     date = models.DateField()
@@ -79,22 +98,35 @@ class StockReport(models.Model):
     reporter = models.ForeignKey(BsaleUser, on_delete=models.DO_NOTHING)
 
 
-class FisicalStock(models.Model):
+class VirtualStock(models.Model):
     quantity = models.FloatField()
-    virtualStock = models.ForeignKey(VirtualStock, on_delete=models.PROTECT)
+    quantityReserved = models.FloatField()
+    quantityAvailable = models.FloatField()
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE)
+    office = models.ForeignKey(Office, on_delete=models.CASCADE)
+
     report = models.ForeignKey(StockReport, on_delete=models.CASCADE)
 
+    created_at = models.DateTimeField(auto_now_add=True)
 
-user_choices = ((0, "Admin"), (1, "Seller"))
 
+class FisicalStock(models.Model):
+    quantity = models.FloatField()
+    report = models.ForeignKey(StockReport, on_delete=models.CASCADE)
 
-class User(models.Model):
-    bsaleUser = models.ForeignKey(BsaleUser, on_delete=models.DO_NOTHING)
-    userType = models.IntegerField(choices=user_choices, default=1)
-    company = models.ForeignKey(Company, on_delete=models.PROTECT)
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE)
+    office = models.ForeignKey(Office, on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 # many to many relations
-class userXoffice(models.Model):
-    user = models.ForeignKey(BsaleUser, on_delete=models.DO_NOTHING)
+class bsaleUserXoffice(models.Model):
+    bsaleUser = models.ForeignKey(BsaleUser, on_delete=models.DO_NOTHING)
     office = models.ForeignKey(Office, on_delete=models.DO_NOTHING)
+
+
+class userXbsaleUser(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    bsaleUser = models.ForeignKey(BsaleUser, on_delete=models.DO_NOTHING)
